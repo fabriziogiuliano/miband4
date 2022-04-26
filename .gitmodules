@@ -1,0 +1,3 @@
+[submodule "huami-token"]
+	path = huami-token
+	url = https://github.com/argrento/huami-token
