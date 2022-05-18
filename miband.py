@@ -190,6 +190,8 @@ class miband(Peripheral):
         self.waitForNotifications(0.1)
         self.setDelegate( Delegate(self) )
 
+    def get_mac_address(self):
+        return self.mac_address
     def init_empty_callbacks(self):
         def fallback():
             return
@@ -511,7 +513,10 @@ class miband(Peripheral):
         # start hear monitor continues
         char_ctrl.write(b'\x15\x01\x01', True)
         t = time.time()
-        while True:
+        N=100
+        i=0
+        while i<N:
+            i=i+1
             self.waitForNotifications(0.5)
             self._parse_queue()
             # send ping request every 12 sec

@@ -201,8 +201,8 @@ if __name__ == "__main__":
             print("\nExit.")
             exit()
     print("here...")
-    get_step_count()
-    print ('Latest heart rate is : %i' % band.get_heart_rate_one_time())
+    band.start_heart_rate_realtime(heart_measure_callback=heart_logger)
+    #print ('Latest heart rate is : %i' % band.get_heart_rate_one_time())
 
     """    
     menu = CursesMenu("MIBand4", "Features marked with @ require Auth Key")
