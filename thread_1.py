@@ -1,20 +1,25 @@
-
 #!/usr/bin/env python3
-#from datetime import datetime
-#import csv
+
+from datetime import datetime
 import pandas as pd
 import numpy as np
-from bluepy import btle
-from bluepy.btle import Scanner, Peripheral, Characteristic, ScanEntry, UUID
 import time
-from miband4_lib import Miband4_lib
 import logging
 from threading import Thread
-
 from miband import miband
 from datetime import datetime
-
 from bluepy.btle import BTLEDisconnectError
+from bluepy.btle import Scanner, Peripheral, Characteristic, ScanEntry, UUID
+from bluepy import btle
+scanner = Scanner()
+frames = []
+addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336'],['f0:96:ca:e3:92:c2','FDC91E5E86196E7AADAA924F2F3A66F5']]
+result = pd.DataFrame(columns=['DEV_ADDR','DEV_RSSI','HR'])
+#addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336']]
+
+n_dev = len(addr_auth)
+i = 0
+j = 0
 
 class Battiti1(Thread):
 
@@ -29,6 +34,7 @@ class Battiti1(Thread):
         self.mac_address = mac_address
         self.auth_key  = bytes.fromhex(auth_key)
         self.heart_rate_list = []
+
 
 
     def heart_logger(self, data):
@@ -61,13 +67,50 @@ class Battiti1(Thread):
         self.heart_rate_list = []
         self._log.info(heart_list)
 
+#END CLASS
 
-#TODO: ADD SCAN HERE!! :-)
+#MAIN
+
+"""
+devs = scanner.scan(1);
+res = np.array([(datetime.now(), dev.getValueText(btle.ScanEntry.COMPLETE_LOCAL_NAME),
+                 dev.getValueText(btle.ScanEntry.SHORT_LOCAL_NAME), dev.addr, dev.addrType, dev.connectable,
+                 dev.rssi, 0) for dev in devs])
+df = pd.DataFrame(res, columns=['DATETIME', 'COMPL_LOC_NAME', 'SHORT_LOC_NAME', 'DEV_ADDR', 'DEV_ADDR_TYPE',
+                                'DEV_CONNECTABLE', 'DEV_RSSI', 'HR'])
+addr_rssi = df[df['COMPL_LOC_NAME'] == 'Mi Smart Band 4'][['DEV_ADDR', 'DEV_RSSI']]
+mac_array = list(np.unique(list(addr_rssi['DEV_ADDR'])))
+n_mac = len(mac_array)
+"""
+
+df = pd.read_pickle("scan.pkl")
+addr_rssi = df[df['COMPL_LOC_NAME'] == 'Mi Smart Band 4'][['DEV_ADDR', 'DEV_RSSI','HR']]
+mac_array = list(np.unique(list(addr_rssi['DEV_ADDR'])))
+n_mac = len(mac_array)
+threads = []
+hr_results =  []
+rssi_lst = []
+auth_mac_address=[]
+for i in range(n_mac):
+    mac_address = mac_array[i]
+    for j in range(n_dev):
+        if mac_address == addr_auth[j][0]:
+            auth_mac_address.append(addr_auth[j][0])
+            auth_key = addr_auth[j][1]
+            rssi = addr_rssi[addr_rssi['DEV_ADDR'] == mac_address][['DEV_ADDR', 'DEV_RSSI']]
+            t = Battiti1(mac_address,auth_key)
+            hr_results.append(t.heart_rate_list)
+
+            threads.append(t)
 
 
-t1 = Battiti1('f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336')
-t2 = Battiti1('f0:96:ca:e3:92:c2','FDC91E5E86196E7AADAA924F2F3A66F5')
+# Launch all threads
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
 
-t1.start()
-time.sleep(0.2)
-t2.start()
+
+rssi_sel=addr_rssi[addr_rssi["DEV_ADDR"].isin(auth_mac_address)].reset_index(drop=True)
+rssi_sel["HR"]=[np.array(l).mean() for l in hr_results]
+print('lista è:', hr_results, type(hr_results))

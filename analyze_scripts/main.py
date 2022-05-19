@@ -6,7 +6,7 @@ import numpy as np
 from bluepy import btle
 from bluepy.btle import Scanner, Peripheral, Characteristic, ScanEntry, UUID
 import time
-import miband4_lib as mib
+#import miband4_lib as mib
 scanner = Scanner()
 frames = []
 hr = []
