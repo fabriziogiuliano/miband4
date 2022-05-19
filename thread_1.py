@@ -11,15 +11,15 @@ from datetime import datetime
 from bluepy.btle import BTLEDisconnectError
 from bluepy.btle import Scanner, Peripheral, Characteristic, ScanEntry, UUID
 from bluepy import btle
+import schedule as s
 scanner = Scanner()
 frames = []
-addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336'],['f0:96:ca:e3:92:c2','FDC91E5E86196E7AADAA924F2F3A66F5']]
+addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336'],['f0:96:ca:e3:92:c2','FDC91E5E86196E7AADAA924F2F3A66F5'],
+             ['df:2c:42:3b:86:a1','14AA302ADFE521233D46B70725FB5C2A'],['d2:c0:c8:21:1d:ff','3E3A547592A768D2A6010547168C1F7B']]
 result = pd.DataFrame(columns=['DEV_ADDR','DEV_RSSI','HR'])
 #addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336']]
 
 n_dev = len(addr_auth)
-i = 0
-j = 0
 
 class Battiti1(Thread):
 
@@ -67,6 +67,8 @@ class Battiti1(Thread):
         self.heart_rate_list = []
         self._log.info(heart_list)
 
+        band.disconnect()
+
 #END CLASS
 
 #MAIN
@@ -82,35 +84,44 @@ addr_rssi = df[df['COMPL_LOC_NAME'] == 'Mi Smart Band 4'][['DEV_ADDR', 'DEV_RSSI
 mac_array = list(np.unique(list(addr_rssi['DEV_ADDR'])))
 n_mac = len(mac_array)
 """
+def misurazioni():
+    df = pd.read_pickle("scan.pkl")
+    addr_rssi = df[df['COMPL_LOC_NAME'] == 'Mi Smart Band 4'][['DEV_ADDR', 'DEV_RSSI','HR']]
+    mac_array = list(np.unique(list(addr_rssi['DEV_ADDR'])))
+    n_mac = len(mac_array)
+    threads = []
+    hr_results =  []
+    rssi_lst = []
+    auth_mac_address=[]
+    i = 0
+    j = 0
+    for i in range(n_mac):
+        mac_address = mac_array[i]
+        for j in range(n_dev):
+            if mac_address == addr_auth[j][0]:
+                auth_mac_address.append(addr_auth[j][0])
+                auth_key = addr_auth[j][1]
+                rssi = addr_rssi[addr_rssi['DEV_ADDR'] == mac_address][['DEV_ADDR', 'DEV_RSSI']]
+                t = Battiti1(mac_address,auth_key)
+                hr_results.append(t.heart_rate_list)
 
-df = pd.read_pickle("scan.pkl")
-addr_rssi = df[df['COMPL_LOC_NAME'] == 'Mi Smart Band 4'][['DEV_ADDR', 'DEV_RSSI','HR']]
-mac_array = list(np.unique(list(addr_rssi['DEV_ADDR'])))
-n_mac = len(mac_array)
-threads = []
-hr_results =  []
-rssi_lst = []
-auth_mac_address=[]
-for i in range(n_mac):
-    mac_address = mac_array[i]
-    for j in range(n_dev):
-        if mac_address == addr_auth[j][0]:
-            auth_mac_address.append(addr_auth[j][0])
-            auth_key = addr_auth[j][1]
-            rssi = addr_rssi[addr_rssi['DEV_ADDR'] == mac_address][['DEV_ADDR', 'DEV_RSSI']]
-            t = Battiti1(mac_address,auth_key)
-            hr_results.append(t.heart_rate_list)
-
-            threads.append(t)
-
-
-# Launch all threads
-for t in threads:
-    t.start()
-for t in threads:
-    t.join()
+                threads.append(t)
 
 
-rssi_sel=addr_rssi[addr_rssi["DEV_ADDR"].isin(auth_mac_address)].reset_index(drop=True)
-rssi_sel["HR"]=[np.array(l).mean() for l in hr_results]
-print('lista è:', hr_results, type(hr_results))
+    # Launch all threads
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
+    rssi_sel=addr_rssi[addr_rssi["DEV_ADDR"].isin(auth_mac_address)].reset_index(drop=True)
+    rssi_sel["HR"]=[np.array(l).mean() for l in hr_results]
+    print(rssi_sel)
+
+
+s.every(5).seconds.do(misurazioni)
+
+while True:
+    s.run_pending()
+    time.sleep(1)
