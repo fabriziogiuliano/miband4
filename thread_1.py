@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from __future__ import print_function
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -12,6 +12,8 @@ from bluepy.btle import BTLEDisconnectError
 from bluepy.btle import Scanner, Peripheral, Characteristic, ScanEntry, UUID
 from bluepy import btle
 import schedule as s
+import pymongo
+import matplotlib.pyplot as plt
 scanner = Scanner()
 frames = []
 addr_auth = [['f8:58:1d:1d:d3:b7','D50271FC8E0AA5E0BE7CFCD27F7AE336'],['f0:96:ca:e3:92:c2','FDC91E5E86196E7AADAA924F2F3A66F5'],
@@ -117,8 +119,21 @@ def misurazioni():
 
     rssi_sel=addr_rssi[addr_rssi["DEV_ADDR"].isin(auth_mac_address)].reset_index(drop=True)
     rssi_sel["HR"]=[np.array(l).mean() for l in hr_results]
-    print(rssi_sel)
+    print('rssi_sel',rssi_sel)
+    hr_db = rssi_sel.to_json(orient='records')
+    #print(hr_db)
+    config = {"host": "10.8.9.27", "token": "TFyCMKn7IOl0JhYUk1J0"}
 
+    # Open MongoDB
+    myclient = pymongo.MongoClient("mongodb://{}:27017/".format(config["host"]))
+    mydb = myclient["BLE_scanner"]
+    # mycol = mydb["pycom_solar"] #collection first experiment
+    # mycol = mydb["pycom_solar_2"] #collection second experiment (battery voltage + solar panel voltage from ADC)
+    mycol = mydb["hr_detection"]  # collection new ADC acquistion + machine Temperature + v_solar stats
+
+    #x = mycol.insert_many(hr_db)
+    data = {hr_db: hr_db}
+    result = mycol.insert_one(data).inserted_id
 
 s.every(5).seconds.do(misurazioni)
 
