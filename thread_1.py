@@ -120,7 +120,8 @@ def misurazioni():
     rssi_sel=addr_rssi[addr_rssi["DEV_ADDR"].isin(auth_mac_address)].reset_index(drop=True)
     rssi_sel["HR"]=[np.array(l).mean() for l in hr_results]
     print('rssi_sel',rssi_sel)
-    hr_db = rssi_sel.to_json(orient='records')
+    #hr_db = rssi_sel.to_json(orient='records')
+    hr_db = rssi_sel.todict()
     #print(hr_db)
     config = {"host": "10.8.9.27", "token": "TFyCMKn7IOl0JhYUk1J0"}
 
@@ -129,11 +130,10 @@ def misurazioni():
     mydb = myclient["BLE_scanner"]
     # mycol = mydb["pycom_solar"] #collection first experiment
     # mycol = mydb["pycom_solar_2"] #collection second experiment (battery voltage + solar panel voltage from ADC)
-    mycol = mydb["hr_detection"]  # collection new ADC acquistion + machine Temperature + v_solar stats
+    mycol = mydb["hr_detect"]  # collection new ADC acquistion + machine Temperature + v_solar stats
 
     #x = mycol.insert_many(hr_db)
-    data = {hr_db: hr_db}
-    result = mycol.insert_one(data).inserted_id
+    result = mycol.insert_one(hr_db).inserted_id
 
 s.every(5).seconds.do(misurazioni)
 
