@@ -20,6 +20,8 @@ from miband import miband
 #MAC_ADDR = "CE:F9:6E:06:AD:38"; AUTH_KEY ="48EC9E0EBC5FE5B578CBC8A715EDE547"; SERIAL_NUMBER="?????"
 MAC_ADDR = "F0:96:CA:E3:92:C2"; AUTH_KEY ="FDC91E5E86196E7AADAA924F2F3A66F5"; SERIAL_NUMBER="23742/12363734"
 #MAC_ADDR = "F8:58:1D:1D:D3:B7"; AUTH_KEY ="D50271FC8E0AA5E0BE7CFCD27F7AE336"; SERIAL_NUMBER="23742/12569290"
+#MAC_ADDR = "df:2c:42:3b:86:a1"; AUTH_KEY ="14AA302ADFE521233D46B70725FB5C2A";
+#MAC_ADDR = "d2:c0:c8:21:1d:ff"; AUTH_KEY ="3E3A547592A768D2A6010547168C1F7B";
 
 # Validate MAC address
 if 1 < len(MAC_ADDR) != 17:
@@ -202,6 +204,7 @@ if __name__ == "__main__":
             exit()
     print("here...")
     band.start_heart_rate_realtime(heart_measure_callback=heart_logger)
+    #band.set_current_time(datetime.now())
     #print ('Latest heart rate is : %i' % band.get_heart_rate_one_time())
 
     """    

@@ -15,7 +15,7 @@ app.layout = html.Div(
         dcc.Graph(id='live-update-graph'),
         dcc.Interval(
             id='interval-component',
-            interval=90*1000, # in milliseconds
+            interval=90*1000, # in milliseconds ogni quanto aggiorno il grafico
             n_intervals=0
         )
     ])
@@ -26,11 +26,12 @@ app.layout = html.Div(
 
 def update_graph_live(n):
     for i in range(180):
+        #prelevo i dati dal database
         df2 = pd.DataFrame(columns=['DATETIME', 'DEV_ADDR', 'DEV_RSSI', 'HR'])
         config = {"host": "10.8.9.27", "token": "TFyCMKn7IOl0JhYUk1J0"}
         myclient = pymongo.MongoClient("mongodb://{}:27017/".format(config["host"]))
         mydb = myclient["BLE_scanner"]
-        mycol = mydb["hr,rssi_detect"]
+        mycol = mydb["LoRa_detec"]
         x = mycol.find({}, {'_id': 0, 'DATETIME': 1, 'DEV_ADDR': 1,
                             'DEV_RSSI': 1, 'HR': 1}, sort=[('_id', pymongo.DESCENDING)])
         for data in x:
@@ -40,6 +41,7 @@ def update_graph_live(n):
         global l
         l = len(addr)
         date = df2['DATETIME']
+        #setto i parametri per la figura
         fig = make_subplots(
             rows=2, cols=1,
             vertical_spacing=0.3,
@@ -51,12 +53,12 @@ def update_graph_live(n):
 
         for i in range(0,l):
             fig.add_trace(go.Scatter(x=df2[df2['DEV_ADDR']==addr[i]]['DATETIME'], y=df2[df2['DEV_ADDR']==addr[i]]['DEV_RSSI'],
-                                     mode='lines+markers',
+                                     mode='lines',
                                      name='RSSI {}'.format(addr[i]),line=dict(color=colors[i])
                                      ), row =1, col = 1
                           )
             fig.add_trace(go.Scatter(x=df2[df2['DEV_ADDR']==addr[i]]['DATETIME'], y=df2[df2['DEV_ADDR'] == addr[i]]['HR'],
-                                     mode='lines+markers',
+                                     mode='lines',
                                      name='HR {}'.format(addr[i]),  line=dict(color=colors[i])
                                      ), row=2, col=1
                           )
